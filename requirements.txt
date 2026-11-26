@@ -1,0 +1,5 @@
+yfinance>=0.2.50
+pandas>=2.2
+requests>=2.32
+anthropic>=1.0
+pydantic>=2.7

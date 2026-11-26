@@ -1,0 +1,70 @@
+# Coleta diaria na nuvem (GitHub Actions): roda mesmo com o PC desligado.
+# 22:00 UTC = 19:00 em Brasilia, segunda a sexta.
+name: Coleta diaria
+
+on:
+  schedule:
+    - cron: "0 22 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: coleta
+  cancel-in-progress: false
+
+jobs:
+  coleta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TZ: America/Sao_Paulo
+      PYTHONIOENCODING: utf-8
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Coleta
+        run: python coletar.py
+
+      - name: Ranking, indicacao do dia e painel
+        run: python ranking.py
+
+      # O banco precisa voltar para o repositorio: as revisoes dos analistas
+      # dependem dos snapshots de dias anteriores.
+      - name: Salvar banco e painel no repositorio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dados/radar.db dados/painel.html dados/ranking_*.csv
+          git commit -m "coleta $(date +%F)" || echo "sem mudancas"
+          git push
+
+      - name: Preparar site
+        run: |
+          mkdir -p site
+          cp dados/painel.html site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publicar:
+    needs: coleta
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
