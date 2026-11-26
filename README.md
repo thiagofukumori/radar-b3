@@ -68,15 +68,19 @@ tabela `selecao` (para medir depois se as escolhas funcionaram).
 4. Cada escolhida mostra preço, stop de referência (preço − 2×ATR), risco até o stop, motivos e riscos.
    Também lista as barradas pelos filtros e as 3 piores ("evitar"). Se nada passar, a indicação é ficar de fora.
 
-## Agendamento
+## Agendamento (nuvem)
 
-Tarefa do Windows **"Radar B3 - coleta diaria"**: seg–sex às 19:00 roda `rodar_diario.ps1`
-(coleta → ranking → painel). Se o PC estiver desligado, roda assim que ligar. Log em `dados/logs/AAAA-MM-DD.log`.
+GitHub Actions (`.github/workflows/coleta.yml`) roda seg–sex às 19:00 (Brasília), mesmo com o PC desligado:
+coleta → ranking → painel, grava o banco de volta no repositório e publica o painel em
+**https://thiagofukumori.github.io/radar-b3/**.
 
 ```powershell
-Start-ScheduledTask "Radar B3 - coleta diaria"        # rodar agora
-Disable-ScheduledTask "Radar B3 - coleta diaria"      # pausar
+gh workflow run coleta.yml       # rodar agora
+git pull                         # trazer o banco atualizado para o PC
 ```
+
+A tarefa local do Windows ("Radar B3 - coleta diaria", `rodar_diario.ps1`) ficou desativada para não divergir do
+banco da nuvem. Para voltar a usá-la: `Enable-ScheduledTask "Radar B3 - coleta diaria"`.
 
 ## Painel
 
